@@ -3,7 +3,7 @@ from urllib2 import urlopen
 import csv
 import collections
 
-URL = "http://v3.torontomls.net/Live/Pages/Public/Link.aspx?Key=98e9e0a5c3474296ab955d0eff74d627&App=TREB"
+# URL = "http://v3.torontomls.net/Live/Pages/Public/Link.aspx?Key=98e9e0a5c3474296ab955d0eff74d627&App=TREB"
 
 DATA_FIELDS = {
     "mls_num": "MLS#:",
@@ -122,16 +122,15 @@ def scrape_url(url, report_index):
 
 
 if __name__ == "__main__":
-    scrape_url(URL, 0)
-    # if len(sys.argv) != 2:
-    # print "Need the filename!"
-    # sys.exit()
+    if len(sys.argv) != 2:
+        print "Need the filename!"
+        sys.exit()
 
-    # filename = sys.argv[1]
-    # # filename = INPUT_FILE
-    # with open(filename) as f:
-    #     for i, url in enumerate(f):
-    #         print "PROCESSING URL %d: %s" % (i, url)
-    #         scrape_url(url, i)
-    #         print "DONE URL ", i
+    filename = sys.argv[1]
+    # filename = INPUT_FILE
+    with open(filename) as f:
+        for i, url in enumerate(f):
+            print "PROCESSING URL %d: %s" % (i, url)
+            scrape_url(url, i)
+            print "DONE URL ", i
 
