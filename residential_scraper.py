@@ -4,6 +4,7 @@ import sys, csv, pprint, collections, time
 
 # URL = "http://v3.torontomls.net/Live/Pages/Public/Link.aspx?Key=0c46e2aed7604e3ca10d56abf498a599&App=TREB"
 # CSV_FILE = "mls_data.csv"
+INPUT_FILE = "./urls.txt"
 
 DATA_FIELDS = {
     "mls_num": "MLS#:",
@@ -15,6 +16,7 @@ DATA_FIELDS = {
     # "taxes" : "Taxes:",
     "fronting_on": "Fronting On:",
     "acreage": "Acreage:",
+    "Lot": "Irreg:",
     "rms": "Rms:",
     "bedrooms": "Bedrooms:",
     "washrms": "Washrms:",
@@ -47,7 +49,10 @@ def get_address_info(report):
 def get_taxes(report):
     global extracted_data
     tax_and_year = [e.string for e in report.find(text="Taxes:").parent.parent.parent.find_all("span", "value")]
-    extracted_data["taxes"] = tax_and_year[0] + " / " + tax_and_year[1]
+    if tax_and_year[1] is not None:  
+        extracted_data["taxes"] = tax_and_year[0] + " / " + tax_and_year[1]
+    else:
+        extracted_data["taxes"] = tax_and_year[0] + " / "
 
 
 def get_building_style_and_type(report):
@@ -57,6 +62,16 @@ def get_building_style_and_type(report):
     extracted_data['building_style'] = style_and_type[0]
     extracted_data['building_type'] = style_and_type[1]
 
+def get_dimensions(report):
+    global extracted_data
+    dimension = report.find(text="Acreage:")
+    if dimension is not None:
+        dimension = dimension.parent.parent.parent.find_all(True, "value")[-1].string
+        extracted_data['dimension'] = dimension
+    else:
+        dimension = report.find(text="Lot:").parent.parent.find(True, "value").string
+        extracted_data['dimension'] = dimension
+    
 
 def extract_report(report):
     global extracted_data
@@ -64,11 +79,15 @@ def extract_report(report):
     get_address_info(report)
     get_taxes(report)
     get_building_style_and_type(report)
-
+    get_dimensions(report)
+    
     # get all the other infos as specifed in DATA_FIELDS
     for search_key in DATA_FIELDS:
-        value = report.find(text=DATA_FIELDS[search_key]).parent.find_next_sibling(True, "value").string
-        extracted_data[search_key] = value
+	try:
+            value = report.find(text=DATA_FIELDS[search_key]).parent.find_next_sibling(True, "value").string
+            extracted_data[search_key] = value
+	except Exception:
+	    extracted_data[search_key] = ""
 
     salesperson_data = [str(result.string) for result in report.find_all("a", "value")]
     data_heading = "list_brokerage"
@@ -84,8 +103,8 @@ def extract_report(report):
             data_heading = "coop_salespersons"
             extracted_data[data_heading] = []
             continue
-        extracted_data[data_heading].append(data)  
-    
+        extracted_data[data_heading].append(data)
+
     # sort by key before return
     extracted_data = collections.OrderedDict(sorted(extracted_data.items()))
     return extracted_data
@@ -129,6 +148,7 @@ if __name__ == "__main__":
         sys.exit()
 
     filename = sys.argv[1]
+    # filename = INPUT_FILE
     with open(filename) as f:
         for i, url in enumerate(f):
             print "PROCESSING URL %d: %s" % (i, url)
